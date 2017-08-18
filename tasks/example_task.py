@@ -1,9 +1,8 @@
 import csv
-from functools import reduce
-from fractions import gcd
-import random
 
 import luigi
+
+import lib
 
 
 class RandomNumbers(luigi.Task):
@@ -13,12 +12,8 @@ class RandomNumbers(luigi.Task):
         with self.output().open('w') as output_file:
             csv_writer = csv.writer(output_file)
 
-            for i in range(1000):
-                csv_writer.writerow([
-                    random.randint(1, 100),
-                    random.randint(1, 1000),
-                    random.randint(1, 10000)
-                 ])
+            for row in lib.rows_of_random_numbers():
+                csv_writer.writerow(row)
 
     def output(self):
         return luigi.LocalTarget(
@@ -43,19 +38,8 @@ class LeastCommonMultiple(luigi.Task):
             for input_task in self.input():
                 with input_task.open('r') as input_file:
                     input_csv = csv.reader(input_file)
-                    for row in input_csv:
-                        input_csv = csv.reader(input_file)
-
-                        output_csv.writerow([
-                            self.lcm(*[int(i) for i in row]),
-                            *row
-                        ])
-
-    @staticmethod
-    def lcm(*numbers):
-        def lcm(a, b):
-            return (a * b) // gcd(a, b)
-        return reduce(lcm, numbers, 1)
+                    for row in lib.generate_lcm_rows(input_csv):
+                        output_csv.writerow(row)
 
 
 if __name__ == "__main__":
