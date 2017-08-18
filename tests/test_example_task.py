@@ -1,6 +1,11 @@
+import datetime
+import io
+from unittest import mock
+
 import pytest
 
 import lib
+from tasks.example_task import RandomNumbers, LeastCommonMultiple
 
 
 @pytest.mark.parametrize("numbers,lcm", [
@@ -55,3 +60,54 @@ def test_generate_lcm_rows(iterable):
     for row in lib.generate_lcm_rows(iterable):
         lcm, *original_row = row
         assert lcm == lib.lcm(*original_row)
+
+
+@pytest.fixture
+def single_file_output():
+    """
+    Mocks a single-file output for luigi.Task.output()
+
+    Usage:
+    >>> output_file, output_mock = single_file_output
+    >>> task.output = output_mock
+    >>> task.run()
+    >>> value = output_file.getvalue()
+    """
+    output_file = io.StringIO()
+    output_file.close = mock.Mock()  # StringIO.close() flushes the buffer :(
+
+    output_mock = mock.Mock()
+    output_mock.open = mock.MagicMock(return_value=output_file)
+
+    return output_file, mock.MagicMock(return_value=output_mock)
+
+
+def test_task_random_numbers_run_writes_to_output(single_file_output):
+    """ RandomNumbers.run writes a csv of random numbers to self.output() """
+    output_file, output_mock = single_file_output
+
+    task = RandomNumbers(date=datetime.datetime.now())
+    task.output = output_mock
+    task.run()
+
+    assert output_mock.called
+    output_mock().open.assert_called_with('w')
+    assert output_file.close.called
+
+    assert output_file.getvalue()
+
+
+def test_task_least_common_multiple_reads_from_requires(single_file_output):
+    """ LeastCommonMultiples.run uses all of the _requires_ files"""
+    output_mock = single_file_output[1]
+
+    task = LeastCommonMultiple(date_interval='2017-08-01-2017-08-17')
+    task.output = output_mock
+
+    input_files = [mock.MagicMock(), mock.MagicMock()]
+    task.input = mock.Mock(return_value=input_files)
+
+    task.run()
+
+    for input_file in input_files:
+        input_file.open.assert_called_with('r')
