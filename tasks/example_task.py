@@ -6,30 +6,28 @@ import lib
 
 
 class RandomNumbers(luigi.Task):
-    date = luigi.DateParameter()
+    number = luigi.IntParameter()
 
     def run(self):
         with self.output().open('w') as output_file:
             csv_writer = csv.writer(output_file)
 
-            for row in lib.rows_of_random_numbers():
+            for row in lib.rows_of_random_numbers(rows=10000):
                 csv_writer.writerow(row)
 
     def output(self):
-        return luigi.LocalTarget(
-            self.date.strftime('data/random_%Y_%m_%d.csv')
-        )
+        return luigi.LocalTarget('data/random_{}.csv'.format(self.number))
 
 
 class LeastCommonMultiple(luigi.Task):
-    date_interval = luigi.DateIntervalParameter()
+    count = luigi.IntParameter()
 
     def output(self):
-        return luigi.LocalTarget("data/lcf_{}.csv".format(self.date_interval))
+        return luigi.LocalTarget("data/lcf_{}.csv".format(self.count))
 
     def requires(self):
         """ Returns all the RandomNumbers.output w/in the date interval """
-        return [RandomNumbers(date) for date in self.date_interval]
+        return [RandomNumbers(i) for i in range(self.count)]
 
     def run(self):
         with self.output().open('w') as output_file:

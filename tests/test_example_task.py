@@ -1,4 +1,3 @@
-import datetime
 import io
 from unittest import mock
 
@@ -86,7 +85,7 @@ def test_task_random_numbers_run_writes_to_output(single_file_output):
     """ RandomNumbers.run writes a csv of random numbers to self.output() """
     output_file, output_mock = single_file_output
 
-    task = RandomNumbers(date=datetime.datetime.now())
+    task = RandomNumbers(number=1)
     task.output = output_mock
     task.run()
 
@@ -101,7 +100,7 @@ def test_task_least_common_multiple_reads_from_requires(single_file_output):
     """ LeastCommonMultiples.run uses all of the _requires_ files"""
     output_mock = single_file_output[1]
 
-    task = LeastCommonMultiple(date_interval='2017-08-01-2017-08-17')
+    task = LeastCommonMultiple(count=3)
     task.output = output_mock
 
     input_files = [mock.MagicMock(), mock.MagicMock()]
