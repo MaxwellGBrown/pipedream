@@ -86,14 +86,29 @@ def test_task_random_numbers_run_writes_to_output(single_file_output):
     output_file, output_mock = single_file_output
 
     task = RandomNumbers(number=1)
-    task.output = output_mock
-    task.run()
+    with mock.patch.object(task, 'output', output_mock):
+        task.run()
 
-    assert output_mock.called
-    output_mock().open.assert_called_with('w')
-    assert output_file.close.called
+        assert output_mock.called
+        output_mock().open.assert_called_with('w')
+        assert output_file.close.called
 
-    assert output_file.getvalue()
+        assert output_file.getvalue()
+
+
+@pytest.mark.parametrize('number', [1, 43, 759])
+def test_task_random_numbers_output(number):
+    """
+    RandomNumbers.output matches it's unique parameters
+
+    Luigi determines whether a task has already been completed based on
+    whether it can match a task to it's output: that's a lukewarm argument
+    for testing this.
+    """
+    task = RandomNumbers(number=number)
+
+    output = task.output()
+    assert output.path.endswith('random_{}.csv'.format(number))
 
 
 def test_task_least_common_multiple_reads_from_requires(single_file_output):
